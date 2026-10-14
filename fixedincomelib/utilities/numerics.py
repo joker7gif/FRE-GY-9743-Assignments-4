@@ -108,20 +108,30 @@ class Interpolator1DPCP(Interpolator1D):
         assert self.extrap_method_ == ExtrapMethod.FLAT
 
     def interpolate(self, x: float) -> float:
-        #TODO
-        pass
+        # At a knot, use the value of the interval ending at that knot.
+        i = np.searchsorted(self.axis1, x, side="left")
+        i = np.clip(i, 0, self.length - 1)
+        return float(self.values[i])
 
     def integrate(self, start_x: float, end_x: float) -> float:
-        #TODO
-        pass
+        weights = self.gradient_of_integrated_value_wrt_ordinate(start_x, end_x)
+        return float(np.dot(weights, self.values))
 
     def gradient_wrt_ordinate(self, x: float) -> np.ndarray:
-        #TODO
-        pass
+        i = np.searchsorted(self.axis1, x, side="left")
+        i = np.clip(i, 0, self.length - 1)
+        gradient = np.zeros(self.length)
+        gradient[i] = 1.0
+        return gradient
 
     def gradient_of_integrated_value_wrt_ordinate(self, start_x: float, end_x: float) -> np.ndarray:
-        #TODO
-        pass
+        if end_x < start_x:
+            return -self.gradient_of_integrated_value_wrt_ordinate(end_x, start_x)
+        # Each derivative is the length of overlap with that node's interval.
+        # Infinite outer bounds implement flat extrapolation on both sides.
+        left = np.r_[-np.inf, self.axis1[:-1]]
+        right = np.r_[self.axis1[:-1], np.inf]
+        return np.maximum(0.0, np.minimum(end_x, right) - np.maximum(start_x, left))
 
 
 
